@@ -1,41 +1,16 @@
-// import { useCallback, useEffect, useRef } from 'react'
-// export default function Home() {
-//   const workerRef = useRef<Worker>()
-
-//   useEffect(() => {
-//     workerRef.current = new Worker(new URL('../workers/worker.ts', import.meta.url))
-//     workerRef.current.onmessage = (event: MessageEvent<number>) =>
-//       alert(`WebWorker Response => ${event.data}`)
-//     return () => {
-//       workerRef.current?.terminate()
-//     }
-//   }, [])
-
-//   const handleWork = useCallback(async () => {
-//     workerRef.current?.postMessage(100000)
-//   }, [])
-
-//   return (
-//     <>
-//       <p>Do work in a WebWorker!</p>
-//       <button onClick={handleWork}>Calculate PI</button>
-//     </>
-//   )
-// }
-
 import React, { useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stats } from "@react-three/drei";
 // import { FishesComponent } from "./Fishes";
 import { SimpleSlider } from "../components/SimpleSlider";
-
+import { FishesComponent } from "../components/FishesComponent";
 
 const BACKGROUND_COLOR = "#444767";
 const EDGE_VISUAL_COLOR = "#40F0FA";
 const outerBoundsDistance = 100;
 
 export default function App() {
-  const [boxSize, setBoxSize] = useState(3);
+  const [boxSize, setBoxSize] = useState(1);
   const [outerBoundsForceScaling, setOuterBoundsForceScaling] = useState(1);
   const [alignmentForeScaling, setAlignmentForeScaling] = useState(6);
   const [cohesionForceScaling, setCohesionForceScaling] = useState(0.8);
@@ -48,7 +23,7 @@ export default function App() {
         flexGrow: 1,
         background: "#312F44",
         color: "white",
-        height:'100%'
+        height: "100%",
       }}
     >
       <div style={{ width: 240, display: "flex", flexDirection: "column" }}>
@@ -102,10 +77,10 @@ export default function App() {
         camera={{
           position: [0, 0, outerBoundsDistance * 1.1],
           near: 1,
-          far: 2000
+          far: 2000,
         }}
         style={{ width: "unset", flexGrow: 1 }}
-      // linear
+        // linear
       >
         <OrbitControls autoRotate />
         <color attach="background" args={[BACKGROUND_COLOR]} />
@@ -119,13 +94,13 @@ export default function App() {
             wireframe
           />
         </mesh>
-        {/* <FishesComponent
+        <FishesComponent
           boxSize={boxSize}
           outerBoundsForceScaling={outerBoundsForceScaling}
           alignmentForeScaling={alignmentForeScaling}
           cohesionForceScaling={cohesionForceScaling}
           separationForceScaling={separationForceScaling}
-        /> */}
+        />
         <pointLight position={[0, 100, 100]} intensity={0.8} color="#C5DCE0" />
         <pointLight position={[0, 100, -100]} intensity={0.1} color="#FE7558" />
         <ambientLight intensity={0.1} />
