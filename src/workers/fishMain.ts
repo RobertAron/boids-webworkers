@@ -2,8 +2,7 @@ import THREE from "three";
 import {
   createFishSquare,
   createNearbyGraph,
-  deserializeFish,
-  serializeFish,
+  fishLogic,
 } from "./fishFunctions";
 import { FishForceFunction, UpdateMessage } from "./fishForces";
 import { WorkerQueMessageCallback, workerQue } from "./workerQue";
@@ -35,7 +34,11 @@ type Parameter<T extends MainFishMessage["type"]> = MainFishMessage & {
 const workers = new Array(100).fill(null).map(() => {
   return new Worker(new URL("./fishForces.ts", import.meta.url));
 });
-
+const chunkArray = <T>(array: T[], chunk_size: number) =>
+  Array(Math.ceil(array.length / chunk_size))
+    .fill(null)
+    .map((_, index) => index * chunk_size)
+    .map((begin) => array.slice(begin, begin + chunk_size));
 function main() {
   let lastDataRequest = Date.now();
   let fishes: Fish[] = [];
@@ -53,22 +56,31 @@ function main() {
   function getNext(_: Parameter<"getNext">) {
     if (!sent) return;
     sent = false;
-    const serializedFish = fishes.map(serializeFish);
-
-    postMessage(serializedFish);
+    const serializedFish = fishes.map(fishLogic.fishToFishLogic);
+    const matrixes = fishes.map((fish) => fish.threeObj.matrix.toArray());
+    postMessage(matrixes);
     const now = Date.now();
     const delta = now - lastDataRequest;
     const cappedDelta = Math.min(delta, 0.5);
     lastDataRequest = now;
     const nearbyGraph = createNearbyGraph(fishes, 5);
-    const updateMessage = nearbyGraph.map(
-      (ele, index): UpdateMessage => ({
+
+    const updateMessage = chunkArray(
+      nearbyGraph.map((ele, i) => ({
+        nearby: ele,
+        mainIndex: i,
+      })),
+      30
+    ).map(
+      (chunk): UpdateMessage => ({
         delta: cappedDelta,
-        fishToUpdate: {
-          mainFish: serializedFish[index],
-          nearbyFish: ele.map((ele) => serializedFish[ele]),
-        },
         forces,
+        fishToUpdates: chunk.map((fish) => ({
+          mainFish: serializedFish[fish.mainIndex],
+          nearbyFish: fish.nearby.map(
+            (nearbyIndex) => serializedFish[nearbyIndex]
+          ),
+        })),
       })
     );
     workerQue<WorkerQueMessageCallback<FishForceFunction>>(
@@ -76,7 +88,7 @@ function main() {
       workers,
       (data) => {
         sent = true;
-        fishes = data.map(deserializeFish);
+        fishes = data.flatMap((chunk) => chunk.map(fishLogic.fishLogicToFish));
       }
     );
     // update fish locations with delta

@@ -4,35 +4,29 @@ export type Fish = {
   velocity: THREE.Vector3;
   threeObj: THREE.Object3D;
 };
-export type SerializedFish = {
+export type FishLogicData = {
   velocity: [number, number, number];
   position: [number, number, number];
-  rotation: [number, number, number];
 };
 
-function serializeFish(fish: Fish): SerializedFish {
-  return {
-    velocity: fish.velocity.toArray(),
-    position: fish.threeObj.position.toArray(),
-    rotation: [
-      fish.threeObj.rotation.x,
-      fish.threeObj.rotation.y,
-      fish.threeObj.rotation.z,
-    ],
-  };
-}
-function deserializeFish(fish: SerializedFish): Fish {
-  const threeObj = new THREE.Object3D();
-  threeObj.position.fromArray(fish.position);
-  threeObj.rotation.fromArray(fish.rotation);
-  threeObj.updateMatrix();
-  return {
-    threeObj,
-    velocity: new THREE.Vector3().fromArray(fish.velocity),
-  };
-}
-
-new THREE.Object3D().rotation.toArray();
+const tempForLookat = new THREE.Vector3();
+const fishLogic = {
+  fishToFishLogic(fish: Fish): FishLogicData {
+    return {
+      position: fish.threeObj.position.toArray(),
+      velocity: fish.velocity.toArray(),
+    };
+  },
+  fishLogicToFish(fish: FishLogicData): Fish {
+    const obj = new THREE.Object3D();
+    obj.position.fromArray(fish.position);
+    obj.lookAt(tempForLookat.fromArray(fish.velocity).add(obj.position));
+    return {
+      threeObj: obj,
+      velocity: new THREE.Vector3().fromArray(fish.velocity),
+    };
+  },
+};
 
 function createFishSquare(length: number): Fish[] {
   const totalCount = length ** 3;
@@ -215,11 +209,10 @@ function createNearbyGraph(allFish: Fish[], distance: number) {
 
 export {
   createNearbyGraph,
-  serializeFish,
-  deserializeFish,
   createFishSquare,
   outerBoundsReturn,
   alignmentForces,
   cohesionForces,
   applySeparationForces,
+  fishLogic
 };

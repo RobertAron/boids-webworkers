@@ -1,15 +1,11 @@
 import * as THREE from "three";
 import React, { useRef, useMemo, useEffect, useState } from "react";
-import { useFrame, useLoader, useThree } from "@react-three/fiber";
+import { useFrame, useLoader } from "@react-three/fiber";
 
 import { Mesh } from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
-import { Fish, deserializeFish } from "../workers/fishFunctions";
 const colorPallete = [
-  // "#444767",
-  // "#443D70",
   "#18F6C4",
-  // "#1F7450",
   "#40F0FA",
   "#C5DCE0",
   "#FD26DE",
@@ -47,12 +43,7 @@ function FishesComponent({
     );
     return mesh?.geometry;
   }, [fishObj]);
-  const fishes = useRef<Fish[]>([
-    {
-      threeObj: new THREE.Object3D(),
-      velocity: new THREE.Vector3(),
-    },
-  ]);
+  const fishes = useRef<THREE.Matrix4[]>([new THREE.Matrix4()]);
   const colorArray = useMemo(
     () =>
       Float32Array.from(
@@ -69,8 +60,7 @@ function FishesComponent({
       new URL("../workers/fishMain.ts", import.meta.url)
     );
     worker.onmessage = (e) => {
-      // console.log("worker response!!", e.data);
-      fishes.current = e.data.map(deserializeFish);
+      fishes.current = e.data.map((e: number[]) => new THREE.Matrix4().fromArray(e));
     };
     setWorker(worker);
     return () => {
@@ -94,8 +84,7 @@ function FishesComponent({
     // don't render as if more than .5 seconds has passed in this scenario.
     for (let i = 0; i < fishes.current.length; ++i) {
       const fish = fishes.current[i];
-      // console.log(fishes.current.length);
-      instancedMeshRef.current.setMatrixAt(i, fish.threeObj.matrix);
+      instancedMeshRef.current.setMatrixAt(i, fish);
     }
     instancedMeshRef.current.count = fishes.current.length;
     instancedMeshRef.current.instanceMatrix.needsUpdate = true;
